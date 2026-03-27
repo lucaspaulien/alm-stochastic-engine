@@ -1,0 +1,21 @@
+# --- Python & Environnements ---
+venv/
+env/
+.env
+bin/
+lib/
+share/
+
+# --- Données Financières (SÉCURITÉ) ---
+data/
+*.csv
+*.xlsx
+*.parquet
+
+# --- Caches & Système ---
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+.DS_Store
+Thumbs.db
