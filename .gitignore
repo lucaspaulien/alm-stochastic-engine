@@ -19,3 +19,7 @@ __pycache__/
 .ipynb_checkpoints/
 .DS_Store
 Thumbs.db
+venv/
+__pycache__/
+reports/*.html
+.DS_Store
