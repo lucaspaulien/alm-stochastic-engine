@@ -57,7 +57,7 @@ $$\Delta EVE \approx -D_{mod} \cdot \Delta y \cdot EVE + \frac{1}{2} \cdot C \cd
 
 **2. Vasicek Stochastic Differential Equation (SDE):**
 $$dr_t = \kappa(\theta - r_t)dt + \sigma dW_t$$
-*(Where $\kappa$ is the speed of mean reversion, $\theta$ the long-term mean, and $dW_t$ a Wiener process).*
+(Where `κ` is the speed of mean reversion, `θ` the long-term mean, and `dW_t` a Wiener process).
 
 **3. DV01 Hedging Formula:**
 $$Nominal_{Swap} = -\frac{DV01_{BalanceSheet}}{DV01_{Unit\_Swap}}$$
