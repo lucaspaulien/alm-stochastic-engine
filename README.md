@@ -64,6 +64,14 @@ $$Nominal_{Swap} = -\frac{DV01_{BalanceSheet}}{DV01_{Unit\_Swap}}$$
 
 ---
 
+## 🧪 Unit Testing & Validation
+The engine includes a robust `unittest` suite to continuously validate the financial mathematics and pricing accuracy:
+* **Par Pricing Validation:** Ensures that fixed-rate instruments issued at market rates hold a Net Present Value (NPV) exactly equal to their nominal.
+* **Derivative Valuation:** Validates that Interest Rate Swaps (IRS) exhibit a strict zero NPV at inception.
+
+---
+
+
 ## 📂 Project Architecture
 ```bash
 alm-stochastic-engine/
@@ -75,5 +83,6 @@ alm-stochastic-engine/
 │   ├── stress_test.py   # Regulatory reporting automation
 │   └── viz.py           # Plotly interactive dashboards
 ├── reports/             # Dynamic HTML Risk Reports
-├── tests/               # Unit tests for valuation accuracy
+├── tests/               # Unit testing suite
+│   ├── test_pricing.py  # Par pricing & NPV financial validation
 └── requirements.txt     # NumPy, SciPy, Pandas, Plotly, Matplotlib
