@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
-from src.contracts import FixedRateLoan, FloatingRateLoan, NonMaturingDeposit
+from src.contracts import FixedRateLoan, FloatingRateLoan, NonMaturingDeposit, InterestRateSwap
+from src.stochastic import VasicekSimulator
 
 class BalanceSheet:
     """Simulateur de Bilan Bancaire ALM Haute Fidélité."""
@@ -16,12 +17,9 @@ class BalanceSheet:
             self.liabilities.append(contract)
 
     def generate_random_portfolio(self, n_loans=800, n_deposits=400):
-        """Génère un mix réaliste Taux Fixe / Taux Variable."""
         for i in range(n_loans):
             nominal = np.random.uniform(50000, 300000)
             mat = np.random.choice([5, 10, 15, 20])
-            
-            # 70% Taux Fixe, 30% Taux Variable (Euribor + Spread)
             if np.random.rand() < 0.7:
                 rate = np.random.uniform(0.035, 0.055)
                 self.add_contract(FixedRateLoan(f"FIX_LOAN_{i}", nominal, mat, rate))
@@ -34,77 +32,93 @@ class BalanceSheet:
             decay = np.random.uniform(0.10, 0.20)
             self.add_contract(NonMaturingDeposit(f"DEP_{j}", nominal, decay))
 
-    # --- MÉTRIQUES DE VALEUR (EVE & CONVEXITÉ) ---
     def calculate_eve(self, yield_curve):
+        """EVE = Somme de toutes les NPV."""
         a_npv = sum([c.calculate_npv(yield_curve) for c in self.assets])
         l_npv = sum([c.calculate_npv(yield_curve) for c in self.liabilities])
         return a_npv + l_npv
+    
+    # ==========================================
+    # L'APPROCHE PROFESSIONNELLE (BUMP & REVALUE)
+    # ==========================================
+    def get_dv01(self, yield_curve):
+        """Calcule combien d'Euros on gagne/perd pour +1 bps de hausse des taux."""
+        eve_base = self.calculate_eve(yield_curve)
+        shocked_curve = yield_curve.apply_shock("parallel", 1) # Choc +1 bps (0.01%)
+        eve_shock = self.calculate_eve(shocked_curve)
+        return eve_shock - eve_base
 
     def get_equity_duration(self, yield_curve):
-        """Sensibilité de 1er ordre (Linéaire)."""
-        a_npv = sum([c.calculate_npv(yield_curve) for c in self.assets])
-        l_npv = sum([c.calculate_npv(yield_curve) for c in self.liabilities])
-        eve = a_npv + l_npv
+        """Déduit la Duration exacte à partir de la perte réelle en Euros."""
+        eve = self.calculate_eve(yield_curve)
+        if abs(eve) < 1e-6: return 0
+        dv01 = self.get_dv01(yield_curve)
+        # Formule mathématique pure : Duration = - dEVE / (EVE * dy)
+        return -dv01 / (eve * 0.0001)
+
+    def optimize_hedging(self, yield_curve, target_duration=0.0):
+        """Immunise le bilan basé sur les sensibilités directes en Euros."""
+        bs_dv01 = self.get_dv01(yield_curve)
         
-        # Duration pondérée
-        d_a = sum([(c.calculate_npv(yield_curve)/a_npv) * c.calculate_duration(yield_curve) for c in self.assets])
-        d_l = sum([(c.calculate_npv(yield_curve)/l_npv) * c.calculate_duration(yield_curve) for c in self.liabilities])
+        # On teste un Swap Receveur de 1M€ pour mesurer son "Pouvoir de Couverture" (DV01)
+        fixed_rate = yield_curve.get_rate(10)
+        test_swap = InterestRateSwap("TEST", 1_000_000, 10, fixed_rate, pay_fixed=False)
+        test_swap.direction = 1
         
-        return (d_a * a_npv + d_l * l_npv) / eve
-
-    def get_equity_convexity(self, yield_curve):
-        """Sensibilité de 2nd ordre (Courbure)."""
-        a_npv = sum([c.calculate_npv(yield_curve) for c in self.assets])
-        l_npv = sum([c.calculate_npv(yield_curve) for c in self.liabilities])
-        eve = a_npv + l_npv
+        npv_base = test_swap.calculate_npv(yield_curve)
+        npv_shock = test_swap.calculate_npv(yield_curve.apply_shock("parallel", 1))
+        swap_dv01 = npv_shock - npv_base
         
-        c_a = sum([(c.calculate_npv(yield_curve)/a_npv) * c.calculate_convexity(yield_curve) for c in self.assets])
-        c_l = sum([(c.calculate_npv(yield_curve)/l_npv) * c.calculate_convexity(yield_curve) for c in self.liabilities])
+        # Combien de Swap de 1M€ faut-il pour annuler le risque de la banque ?
+        required_nominal = - bs_dv01 / (swap_dv01 / 1_000_000)
         
-        return (c_a * a_npv + c_l * l_npv) / eve
+        print(f"--- OPTIMISATION DU HEDGING ---")
+        print(f"Sensibilité (DV01) Bilan : {bs_dv01:,.0f} € par point de base")
+        print(f"Nominal de Swap requis   : {required_nominal:,.0f} €")
+        return required_nominal, fixed_rate
 
-    # --- MÉTRIQUE DE MARGE (NII) ---
-    def calculate_nii(self, yield_curve, horizon=1.0):
-        total_income = 0
-        total_expense = 0
+    def apply_hedge(self, nominal, fixed_rate, maturity=10):
+        """Injecte le swap dans le bilan."""
+        hedge_swap = InterestRateSwap("STRATEGIC_HEDGE", nominal, maturity, fixed_rate, pay_fixed=False)
+        hedge_swap.direction = 1 
+        self.assets.append(hedge_swap)
+        
+        type_swap = "Payeur de Fixe" if nominal < 0 else "Receveur de Fixe"
+        print(f"✅ Couverture appliquée : Swap {type_swap} de {abs(nominal):,.0f} €")
 
-        for asset in self.assets:
-            effective_time = min(asset.maturity, horizon)
-            # Le FloatingRateLoan utilisera le taux de la courbe, le Fixed utilisera son taux fixe
-            cfs = asset.get_cashflows(yield_curve)
-            total_income += abs(cfs.get(1, asset.nominal * 0.04)) # Estimation simplifiée sur Y1
-
-        dep_rate = yield_curve.get_rate(horizon) * 0.4
-        for liab in self.liabilities:
-            total_expense += abs(liab.nominal) * dep_rate * horizon
-
-        return total_income - total_expense
+    def calculate_stochastic_var(self, simulator, n_scenarios=30):
+        """Calcul allégé (30 scénarios au lieu de 100 pour la vitesse)."""
+        from src.yield_curve import YieldCurve
+        paths = simulator.simulate_paths(n_paths=n_scenarios, n_years=1)
+        final_rates = paths[-1, :]
+        eve_base = self.calculate_eve(YieldCurve([1, 10], [simulator.r0, simulator.r0 + 0.01]))
+        
+        diffs = []
+        for r in final_rates:
+            scen_curve = YieldCurve([1, 10, 20], [r, r + 0.005, r + 0.01])
+            diffs.append(self.calculate_eve(scen_curve) - eve_base)
+        
+        var_95 = np.percentile(diffs, 5)
+        print(f"--- ANALYSE STOCHASTIQUE ---")
+        print(f"EVE VaR (95%) : {var_95:+,.0f} €")
+        return var_95
 
 if __name__ == "__main__":
     from src.yield_curve import YieldCurve
-    
     bank = BalanceSheet()
-    curve = YieldCurve([0.5, 1, 10], [0.03, 0.032, 0.038])
+    curve = YieldCurve([1, 10], [0.035, 0.04])
     bank.generate_random_portfolio()
     
-    eve0 = bank.calculate_eve(curve)
-    dur = bank.get_equity_duration(curve)
-    conv = bank.get_equity_convexity(curve)
+    # 1. Avant Hedge
+    print(f"Duration avant : {bank.get_equity_duration(curve):.4f}")
     
-    # Choc violent de +300 bps pour tester la convexité
-    shock_bps = 300
-    dy = shock_bps / 10000
-    shock_curve = curve.apply_shock("parallel", shock_bps)
+    # 2. Application Hedge
+    nom, rate = bank.optimize_hedging(curve)
+    bank.apply_hedge(nom, rate)
     
-    eve_real = bank.calculate_eve(shock_curve)
-    # Formule Taylor : dEVE = -Dur * dy * EVE + 0.5 * Conv * dy^2 * EVE
-    eve_pred = eve0 * (1 - dur * dy + 0.5 * conv * (dy**2))
+    # 3. Après Hedge
+    print(f"Duration après : {bank.get_equity_duration(curve):.4f}")
     
-    print(f"--- ANALYSE QUANTITATIVE AVANCÉE ---")
-    print(f"Duration de l'Equity  : {dur:.2f} ans")
-    print(f"Convexité de l'Equity : {conv:.2f}")
-    print("-" * 40)
-    print(f"Choc de +{shock_bps} bps :")
-    print(f"Variation Réelle      : {eve_real - eve0:+,.0f} €")
-    print(f"Variation Prédite     : {eve_pred - eve0:+,.0f} €")
-    print(f"Précision du modèle   : {100 - abs((eve_real-eve_pred)/eve_real)*100:.4f}%")
+    # 4. Monte-Carlo (30 scenarios)
+    sim = VasicekSimulator(r0=0.035, kappa=0.1, theta=0.04, sigma=0.01)
+    bank.calculate_stochastic_var(sim, n_scenarios=30)

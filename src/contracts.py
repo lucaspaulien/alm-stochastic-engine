@@ -29,8 +29,6 @@ class Contract:
 
     def calculate_modified_duration(self, yield_curve):
         """Duration Modifiée : Sensibilité directe dV/dy."""
-        # Pour une courbe continue : D_mod = D_mac / (1 + r)
-        # Ici on simplifie en utilisant le taux à la maturité
         r = yield_curve.get_rate(self.maturity)
         return self.calculate_duration(yield_curve) / (1 + r)
 
@@ -51,10 +49,13 @@ class FixedRateLoan(Contract):
         self.rate = rate
 
     def get_cashflows(self, yield_curve=None):
+        """Génération des flux fixes : Intérêts + Capital in fine."""
         cfs = {}
         for t in range(1, int(self.maturity) + 1):
             interest = self.nominal * self.rate
-            cfs[t] = self.direction * (interest if t < int(self.maturity) else (interest + self.nominal))
+            # Flux = Intérêt simple, et au dernier terme on ajoute le Capital
+            payment = interest if t < int(self.maturity) else (interest + self.nominal)
+            cfs[t] = self.direction * payment
         return cfs
 
 class FloatingRateLoan(Contract):
@@ -67,24 +68,47 @@ class FloatingRateLoan(Contract):
         """Les flux dépendent des taux forward de la courbe."""
         cfs = {}
         for t in range(1, int(self.maturity) + 1):
-            # On utilise le taux spot comme proxy du forward pour l'exercice
             variable_rate = yield_curve.get_rate(t) + self.spread
             interest = self.nominal * variable_rate
             cfs[t] = self.direction * (interest if t < int(self.maturity) else (interest + self.nominal))
         return cfs
 
 class NonMaturingDeposit(Contract):
-    """Dépôts à vue avec loi d'écoulement exponentielle (NMD)."""
     def __init__(self, contract_id, nominal, decay_rate=0.15):
-        # Maturité conventionnelle de 20 ans pour les dépôts stables
         super().__init__(contract_id, nominal, maturity=20, side="Liability")
-        self.decay_rate = decay_rate
+        self.base_decay = decay_rate
 
     def get_cashflows(self, yield_curve=None):
+        """Loi d'écoulement dynamique liée aux taux."""
         cfs = {}
         balance = self.nominal
+        dynamic_decay = self.base_decay
+        if yield_curve:
+            market_rate = yield_curve.get_rate(1.0)
+            dynamic_decay = self.base_decay * (1 + max(0, market_rate - 0.03) * 5)
+            dynamic_decay = min(0.40, dynamic_decay)
+
         for t in range(1, 21):
-            outflow = balance * self.decay_rate
+            outflow = balance * dynamic_decay
             cfs[t] = self.direction * outflow
             balance -= outflow
+        return cfs
+    
+class InterestRateSwap(Contract):
+    """Swap de Taux (IRS) pour Hedging."""
+    def __init__(self, contract_id, nominal, maturity, fixed_rate, pay_fixed=True):
+        super().__init__(contract_id, nominal, maturity, side="Asset")
+        self.fixed_rate = fixed_rate
+        self.pay_fixed = pay_fixed
+
+    def get_cashflows(self, yield_curve):
+        """Différentiel entre taux fixe et taux variable."""
+        cfs = {}
+        for t in range(1, int(self.maturity) + 1):
+            variable_rate = yield_curve.get_rate(t)
+            if self.pay_fixed:
+                net_rate = variable_rate - self.fixed_rate
+            else:
+                net_rate = self.fixed_rate - variable_rate
+            cfs[t] = self.direction * (self.nominal * net_rate)
         return cfs
