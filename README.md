@@ -1,11 +1,6 @@
-# 🏦 Advanced ALM Stochastic Engine & Macro-Hedging Framework
+# Advanced ALM Stochastic Engine & Macro-Hedging Framework
 
-[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![Financial Standards](https://img.shields.io/badge/Standards-EBA_IRRBB-red.svg)](https://www.eba.europa.eu/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Quant: Stochastic](https://img.shields.io/badge/Quant-Monte_Carlo-purple.svg)]()
-
-## 🎯 Overview
+## Overview
 This high-performance **Asset Liability Management (ALM)** engine is a quantitative framework designed to simulate a commercial bank's balance sheet under complex market conditions. Going beyond static gap analysis, this engine integrates **Stochastic Calculus**, **Behavioral Modeling**, and **Automated Macro-Hedging** to provide a production-ready environment for monitoring **Interest Rate Risk in the Banking Book (IRRBB)**.
 
 The framework quantifies the dual impact of interest rate movements on:
@@ -15,7 +10,7 @@ The framework quantifies the dual impact of interest rate movements on:
 
 ---
 
-## 🔥 Key Quantitative Features (V4.0)
+## Key Quantitative Features (V4.0)
 
 ### 1. Stochastic Interest Rate Modeling (Monte Carlo)
 * **Vasicek Model:** Implementation of a mean-reverting stochastic differential equation to generate realistic interest rate trajectories.
@@ -30,7 +25,7 @@ The framework quantifies the dual impact of interest rate movements on:
 
 ---
 
-## 📈 Quantitative & Financial Core
+## Quantitative & Financial Core
 
 ### 1. Term Structure Modeling
 * **Yield Curve Bootstrapping:** Construction of zero-coupon curves using **Cubic Spline Interpolation** ($S$) for continuous and smooth discount factors.
@@ -48,7 +43,7 @@ The framework quantifies the dual impact of interest rate movements on:
 
 ---
 
-## 🛠 Mathematical Foundations
+## Mathematical Foundations
 
 The engine ensures absolute mathematical consistency across all valuation metrics:
 
@@ -64,7 +59,7 @@ $$Nominal_{Swap} = -\frac{DV01_{BalanceSheet}}{DV01_{Unit\_Swap}}$$
 
 ---
 
-## 🧪 Unit Testing & Validation
+## Unit Testing & Validation
 The engine includes a robust `unittest` suite to continuously validate the financial mathematics and pricing accuracy:
 * **Par Pricing Validation:** Ensures that fixed-rate instruments issued at market rates hold a Net Present Value (NPV) exactly equal to their nominal.
 * **Derivative Valuation:** Validates that Interest Rate Swaps (IRS) exhibit a strict zero NPV at inception.
@@ -72,7 +67,7 @@ The engine includes a robust `unittest` suite to continuously validate the finan
 ---
 
 
-## 📂 Project Architecture
+## Project Architecture
 ```bash
 alm-stochastic-engine/
 ├── src/
