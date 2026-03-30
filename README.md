@@ -65,9 +65,9 @@ $$\Delta EVE \approx -D_{mod} \cdot \Delta y \cdot EVE + \frac{1}{2} \cdot C \cd
 $$dr_t = \kappa(\theta - r_t)dt + \sigma dW_t$$
 (Where `κ` is the speed of mean reversion, `θ` the long-term mean, and `dW_t` a Wiener process).
 
-**3. NII Projection (Periodic Margin):**
-$$NII_m = \sum_{i \in Assets} (CRD_{i,m} \cdot r_{i,m}) - \sum_{j \in Liab} (Nominal_{j,m} \cdot r_{j,m})$$
-*(Where $CRD_{i,m}$ is the amortized Capital Remaining Due at month $m$)*.
+**3. Net Interest Income (NII) Projection**
+$$NII_m = \sum_{i \in Assets} \left( CRD_{i,m} \cdot \frac{r_{i,m}}{12} \right) - \sum_{j \in Liabilities} \left( Nominal_{j,m} \cdot \frac{r_{j,m}}{12} \right)$$
+*Where $CRD_{i,m}$ represents the amortized Capital Remaining Due for asset $i$ at month $m$.*
 
 **4. DV01 Hedging Formula:**
 $$Nominal_{Swap} = -\frac{DV01_{BalanceSheet}}{DV01_{Unit\_Swap}}$$
