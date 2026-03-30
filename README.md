@@ -67,7 +67,7 @@ $$dr_t = \kappa(\theta - r_t)dt + \sigma dW_t$$
 
 **3. Net Interest Income (NII) Projection**
 $$NII_{m} = \sum_{i \in Assets} \left( CRD_{i,m} \cdot \frac{r_{i,m}}{12} \right) - \sum_{j \in Liabilities} \left( Nominal_{j,m} \cdot \frac{r_{j,m}}{12} \right)$$
-*Where $CRD_{i,m}$ represents the amortized Capital Remaining Due for asset $i$ at month $m$.*
+(Where `CRD_{i,m}` represents the amortized Capital Remaining Due for asset `i` at month `m`).
 
 **4. DV01 Hedging Formula:**
 $$Nominal_{Swap} = -\frac{DV01_{BalanceSheet}}{DV01_{Unit\_Swap}}$$
