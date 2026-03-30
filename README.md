@@ -70,14 +70,19 @@ The engine includes a robust `unittest` suite to continuously validate the finan
 ## Project Architecture
 ```bash
 alm-stochastic-engine/
+├── notebooks/
+│   └── ALM_Showcase.ipynb   # Interactive Jupyter notebook demonstration
 ├── src/
-│   ├── yield_curve.py   # Spline interpolation & EBA shock logic
-│   ├── contracts.py     # OO-Modeling (Fixed, Floating, NMD, IRS)
-│   ├── stochastic.py    # Vasicek Monte Carlo Simulator
-│   ├── engine.py        # Portfolio Aggregator, DV01 Hedging & VaR
-│   ├── stress_test.py   # Regulatory reporting automation
-│   └── viz.py           # Plotly interactive dashboards
-├── reports/             # Dynamic HTML Risk Reports
-├── tests/               # Unit testing suite
-│   ├── test_pricing.py  # Par pricing & NPV financial validation
-└── requirements.txt     # NumPy, SciPy, Pandas, Plotly, Matplotlib
+│   ├── __init__.py          # Source module initialization
+│   ├── yield_curve.py       # Spline interpolation & EBA shock logic
+│   ├── contracts.py         # OO-Modeling (Fixed, Floating, NMD, IRS)
+│   ├── stochastic.py        # Vasicek Monte Carlo Simulator
+│   ├── engine.py            # Portfolio Aggregator, DV01 Hedging & VaR
+│   ├── stress_test.py       # Regulatory reporting automation
+│   └── viz.py               # Plotly interactive dashboards
+├── tests/                   # Unit testing suite
+│   ├── __init__.py          # Test module initialization
+│   └── test_pricing.py      # Par pricing & NPV financial validation
+├── .gitignore               # Git ignore rules (venv, cache, etc.)
+├── README.md                # Project documentation
+└── requirements.txt         # NumPy, SciPy, Pandas, Plotly
