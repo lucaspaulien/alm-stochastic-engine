@@ -66,7 +66,9 @@ $$dr_t = \kappa(\theta - r_t)dt + \sigma dW_t$$
 (Where `κ` is the speed of mean reversion, `θ` the long-term mean, and `dW_t` a Wiener process).
 
 **3. Net Interest Income (NII) Projection**
+
 $$NII_m = \sum_{i \in Assets} \left( CRD_{i,m} \cdot \frac{r_{i,m}}{12} \right) - \sum_{j \in Liabilities} \left( Nominal_{j,m} \cdot \frac{r_{j,m}}{12} \right)$$
+
 *Where $CRD_{i,m}$ represents the amortized Capital Remaining Due for asset $i$ at month $m$.*
 
 **4. DV01 Hedging Formula:**
