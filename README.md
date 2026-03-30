@@ -10,7 +10,18 @@ The framework quantifies the dual impact of interest rate movements on:
 
 ---
 
-## Key Quantitative Features (V4.0)
+## Key Features 
+* **Multi-Product Banking Engine:** Handles Amortizing Fixed-Rate Loans, Floating-Rate Loans (Spread-based), and Non-Maturing Deposits (NMDs).
+* **Regulatory Sensitivity (EVE):** Calculation of Economic Value of Equity (EVE) via parallel and non-parallel shocks (DV01, Duration, Convexity).
+* **NII Projection (Margin Analysis):** Dynamic Net Interest Income (NII) projection over a 36-month horizon with amortizing capital (Run-off profile) and Earnings at Risk (EaR) metrics.
+* **Macro-Calibration & Behavioral Modeling:** OLS-based calibration of the **Vasicek SDE** and estimation of **Deposit Beta** (Pass-through rate) on historical market data.
+* **Stochastic Monte Carlo:** Vasicek-driven interest rate simulations for Value-at-Risk (VaR) estimation.
+* **Automated Hedging:** Portfolio immunization using Interest Rate Swaps (IRS) via Dollar-Duration matching.
+* **Industrial Reporting:** Automated generation of interactive HTML Dashboards using **Plotly** for ALM committees.
+
+---
+
+## Key Quantitative Features
 
 ### 1. Stochastic Interest Rate Modeling (Monte Carlo)
 * **Vasicek Model:** Implementation of a mean-reverting stochastic differential equation to generate realistic interest rate trajectories.
@@ -54,7 +65,11 @@ $$\Delta EVE \approx -D_{mod} \cdot \Delta y \cdot EVE + \frac{1}{2} \cdot C \cd
 $$dr_t = \kappa(\theta - r_t)dt + \sigma dW_t$$
 (Where `κ` is the speed of mean reversion, `θ` the long-term mean, and `dW_t` a Wiener process).
 
-**3. DV01 Hedging Formula:**
+**3. NII Projection (Periodic Margin):**
+$$NII_m = \sum_{i \in Assets} (CRD_{i,m} \cdot r_{i,m}) - \sum_{j \in Liab} (Nominal_{j,m} \cdot r_{j,m})$$
+*(Where $CRD_{i,m}$ is the amortized Capital Remaining Due at month $m$)*.
+
+**4. DV01 Hedging Formula:**
 $$Nominal_{Swap} = -\frac{DV01_{BalanceSheet}}{DV01_{Unit\_Swap}}$$
 
 ---
@@ -71,18 +86,22 @@ The engine includes a robust `unittest` suite to continuously validate the finan
 ```bash
 alm-stochastic-engine/
 ├── notebooks/
-│   └── ALM_Showcase.ipynb   # Interactive Jupyter notebook demonstration
+│   └── ALM_Showcase.ipynb      # Interactive Full-Scale Quant Demonstration
+├── reports/                    # Automated HTML Risk Dashboards (Plotly)
 ├── src/
-│   ├── __init__.py          # Source module initialization
-│   ├── yield_curve.py       # Spline interpolation & EBA shock logic
-│   ├── contracts.py         # OO-Modeling (Fixed, Floating, NMD, IRS)
-│   ├── stochastic.py        # Vasicek Monte Carlo Simulator
-│   ├── engine.py            # Portfolio Aggregator, DV01 Hedging & VaR
-│   ├── stress_test.py       # Regulatory reporting automation
-│   └── viz.py               # Plotly interactive dashboards
-├── tests/                   # Unit testing suite
-│   ├── __init__.py          # Test module initialization
-│   └── test_pricing.py      # Par pricing & NPV financial validation
-├── .gitignore               # Git ignore rules (venv, cache, etc.)
-├── README.md                # Project documentation
-└── requirements.txt         # NumPy, SciPy, Pandas, Plotly
+│   ├── __init__.py
+│   ├── yield_curve.py          # Spline interpolation & EBA shock logic
+│   ├── contracts.py            # OO-Modeling (Fixed, Floating, NMD, IRS)
+│   ├── stochastic.py           # Vasicek Monte Carlo Simulator
+│   ├── engine.py               # Portfolio Aggregator & EVE Analytics
+│   ├── nii_engine.py           # NII Projection & Earnings at Risk (EaR)
+│   ├── macro_calibration.py    # Econometric OLS Calibration (Vasicek & Beta)
+│   ├── reporting.py            # Automated Plotly Dashboard Generator
+│   ├── stress_test.py          # Regulatory scenario orchestration
+│   └── viz.py                  # Static plotting utilities
+├── tests/                      # Unit testing suite
+│   ├── __init__.py
+│   └── test_pricing.py         # Financial validation (NPV & Par Pricing)
+├── .gitignore
+├── README.md
+└── requirements.txt            # NumPy, SciPy, Pandas, Plotly, Statsmodels
